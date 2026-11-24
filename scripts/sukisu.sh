@@ -47,16 +47,11 @@ setup_sukisu() {
     cd "$GKI_ROOT/SukiSU"
 
     if [ -z "${1-}" ]; then
-        TAG=$(git describe --abbrev=0 --tags 2>/dev/null || echo "")
-        if [ -n "$TAG" ]; then
-            git fetch --depth=1 origin "refs/tags/${TAG}:refs/tags/${TAG}" 2>/dev/null || true
-            git checkout "$TAG" && echo "[-] Checked out latest tag: $TAG."
-        else
-            echo "[-] No tags with shallow clone, staying on default branch."
-        fi
+        # Shallow clone does not fetch tags; just use the default branch HEAD.
+        echo "[-] Using default branch HEAD (latest kernel code)."
     else
         git fetch --depth=1 origin "$1" 2>/dev/null || true
-        git checkout "$1" && echo "[-] Checked out $1." || echo "[-] Checkout failed, using default branch."
+        git checkout "$1" 2>/dev/null && echo "[-] Checked out $1." || echo "[-] Checkout failed, using default branch."
     fi
 
     cd "$DRIVER_DIR"
