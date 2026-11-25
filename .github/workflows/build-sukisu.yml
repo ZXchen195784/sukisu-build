@@ -63,15 +63,17 @@ jobs:
           export ARCH=arm64
           export KBUILD_BUILD_USER=rainyxeon
           export KBUILD_BUILD_HOST=cloud-build
-          KCFLAGS="-O3 -march=armv8.2-a+crypto+fp16+dotprod -mcpu=cortex-a78 -mtune=cortex-a78"
-          MAKEARGS="O=out KCFLAGS=$KCFLAGS ARCH=arm64 LLVM=1 LLVM_IAS=1 CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi-"
+          # Pass KCFLAGS as an ENV var (has spaces). Never put it unquoted in MAKEARGS,
+          # otherwise -march=... gets split and parsed by make as invalid options.
+          export KCFLAGS="-O3 -march=armv8.2-a+crypto+fp16+dotprod -mcpu=cortex-a78 -mtune=cortex-a78"
+          MAKEARGS=(O=out ARCH=arm64 LLVM=1 LLVM_IAS=1 CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi-)
 
           # 1) base defconfig
-          make -j$(nproc) $MAKEARGS ruby_defconfig
+          make -j$(nproc) "${MAKEARGS[@]}" ruby_defconfig
 
           # 2) install SukiSU feature config on top (fixes KPROBES/KALLSYMS dependency)
           cp "$GITHUB_WORKSPACE/sukisu.config" arch/arm64/configs/vendor/sukisu.config
-          make -j$(nproc) $MAKEARGS vendor/sukisu.config
+          make -j$(nproc) "${MAKEARGS[@]}" vendor/sukisu.config
 
           echo "=== Final config verification ==="
           grep -E "^CONFIG_(KSU|KPM|KPROBES|EXT4_FS|KALLSYMS)=" out/.config || true
@@ -79,7 +81,7 @@ jobs:
           grep -q "^CONFIG_KSU=y" out/.config || { echo "ERROR: CONFIG_KSU not enabled!"; exit 1; }
 
           # 3) build
-          make -j$(nproc) $MAKEARGS Image.gz-dtb
+          make -j$(nproc) "${MAKEARGS[@]}" Image.gz-dtb
 
           test -f out/arch/arm64/boot/Image.gz-dtb || { echo "ERROR: no Image.gz-dtb"; exit 1; }
           echo "[+] Kernel built:"
