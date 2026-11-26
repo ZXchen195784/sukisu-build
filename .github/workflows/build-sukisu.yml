@@ -45,7 +45,8 @@ jobs:
       - name: Integrate SukiSU Nova into kernel source
         run: |
           cd kernel
-          cp "$GITHUB_WORKSPACE/scripts/sukisu.sh" ./sukisu.sh
+          # Download from raw so we never depend on checkout file layout
+          curl -fsSL "https://raw.githubusercontent.com/ZXchen195784/sukisu-build/main/scripts/sukisu.sh" -o ./sukisu.sh
           chmod +x ./sukisu.sh
           ./sukisu.sh
           echo "=== symlink check ==="
@@ -72,7 +73,7 @@ jobs:
           make -j$(nproc) "${MAKEARGS[@]}" ruby_defconfig
 
           # 2) install SukiSU feature config on top (fixes KPROBES/KALLSYMS dependency)
-          cp "$GITHUB_WORKSPACE/sukisu.config" arch/arm64/configs/vendor/sukisu.config
+          curl -fsSL "https://raw.githubusercontent.com/ZXchen195784/sukisu-build/main/sukisu.config" -o arch/arm64/configs/vendor/sukisu.config
           make -j$(nproc) "${MAKEARGS[@]}" vendor/sukisu.config
 
           echo "=== Final config verification ==="
