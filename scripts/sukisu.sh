@@ -46,6 +46,18 @@ setup_sukisu() {
     test -d "$GKI_ROOT/SukiSU" || git clone --depth=1 "$CLONE_URL" "$GKI_ROOT/SukiSU" && echo "[+] Repository cloned."
     cd "$GKI_ROOT/SukiSU"
 
+    # Compatibility patch for old (4.19 / non-GKI) kernels:
+    # MODULE_IMPORT_NS was introduced in Linux 5.2. Kernel 4.19 has no such macro,
+    # so the call in core/init.c fails with -Werror,-Wimplicit-int. Namespace import
+    # does not exist on 4.19 anyway, so commenting those lines out is safe.
+    echo "[+] Patching MODULE_IMPORT_NS for 4.19 kernel compatibility..."
+    find "$GKI_ROOT/SukiSU/kernel" -name '*.c' -type f | while read -r f; do
+        if grep -q "MODULE_IMPORT_NS" "$f"; then
+            sed -i 's/^\([[:space:]]*\)MODULE_IMPORT_NS/\1\/\/MODULE_IMPORT_NS/' "$f"
+            echo "    patched: $(basename "$f")"
+        fi
+    done
+
     if [ -z "${1-}" ]; then
         # Shallow clone does not fetch tags; just use the default branch HEAD.
         echo "[-] Using default branch HEAD (latest kernel code)."
